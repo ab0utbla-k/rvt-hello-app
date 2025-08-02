@@ -1,14 +1,11 @@
 # RVT Hello App
 
-A Go-based REST API application with PostgreSQL database integration, featuring user management and health monitoring capabilities.
+A Go-based REST API application with PostgreSQL database integration.
 
 ## Features
 
 - RESTful API with user management
 - PostgreSQL database integration
-- Health check endpoints
-- Rate limiting and middleware support
-- Application metrics and monitoring
 - Configurable database connection pooling
 
 ## Prerequisites
