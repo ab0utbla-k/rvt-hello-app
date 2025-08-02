@@ -54,7 +54,7 @@ db/migrations/down: confirm
 ## compose/up: start docker compose services
 .PHONY: compose/up
 compose/up:
-	docker compose up -d
+	docker compose up --build -d
 
 ## compose/down: stop docker compose services and remove volumes
 .PHONY: compose/down
@@ -71,4 +71,4 @@ setup/dev: compose/up
 	@$(MAKE) db/migrations/up
 	@echo "📋 Listing database tables...\n"
 	@$(MAKE) db/tables
-	@echo '✅ Development environment ready! Run "make run/api" to start the server.'
+	@echo '✅ Development environment ready!'
