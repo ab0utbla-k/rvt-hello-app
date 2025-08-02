@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ab0utbla-k/rvt-app/internal/data"
+	"github.com/ab0utbla-k/rvt-hello-app/internal/data"
 
 	_ "github.com/lib/pq"
 )

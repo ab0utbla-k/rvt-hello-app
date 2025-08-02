@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ab0utbla-k/rvt-app/internal/validator"
+	"github.com/ab0utbla-k/rvt-hello-app/internal/validator"
 )
 
 type User struct {
@@ -64,18 +64,18 @@ func (u UserModel) Get(username string) (*User, error) {
 
 func (u *User) GetBirthdayMessage() string {
 	today := time.Now()
-	
+
 	thisYearBirthday := time.Date(today.Year(), u.DateOfBirth.Month(), u.DateOfBirth.Day(), 0, 0, 0, 0, time.UTC)
-	
+
 	if thisYearBirthday.Before(today) {
 		thisYearBirthday = thisYearBirthday.AddDate(1, 0, 0)
 	}
-	
+
 	daysUntilBirthday := int(thisYearBirthday.Sub(today).Hours() / 24)
-	
+
 	if daysUntilBirthday == 0 {
 		return fmt.Sprintf("Hello, %s! Happy birthday!", u.Username)
 	}
-	
+
 	return fmt.Sprintf("Hello, %s! Your birthday is in %d day(s)", u.Username, daysUntilBirthday)
 }
