@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ab0utbla-k/rvt-app/internal/data"
-	"github.com/ab0utbla-k/rvt-app/internal/validator"
+	"github.com/ab0utbla-k/rvt-hello-app/internal/data"
+	"github.com/ab0utbla-k/rvt-hello-app/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
 

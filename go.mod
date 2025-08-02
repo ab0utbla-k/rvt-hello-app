@@ -1,10 +1,8 @@
-module github.com/ab0utbla-k/rvt-app
+module github.com/ab0utbla-k/rvt-hello-app
 
 go 1.24.5
 
 require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.9
-	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
-	golang.org/x/time v0.12.0
 )
