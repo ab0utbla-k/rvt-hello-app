@@ -63,7 +63,11 @@ func (u UserModel) Get(username string) (*User, error) {
 }
 
 func (u *User) GetBirthdayMessage() string {
-	today := time.Now()
+	now := time.Now()
+	location := now.Location()
+
+	// Today's date at midnight in local timezone
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location)
 
 	thisYearBirthday := time.Date(today.Year(), u.DateOfBirth.Month(), u.DateOfBirth.Day(), 0, 0, 0, 0, time.UTC)
 
