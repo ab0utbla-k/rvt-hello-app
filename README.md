@@ -8,46 +8,86 @@ A Go-based REST API application with PostgreSQL database integration.
 - PostgreSQL database integration
 - Configurable database connection pooling
 
+# Local PostgreSQL Setup with Docker Compose
+
 ## Prerequisites
 
-To run this application locally, you need:
+- Docker and Docker Compose installed
+- `psql` client installed on your machine
+- `make` installed
 
-- **Go 1.24.5** or later
-- **PostgreSQL** - Must be installed and running locally
-- A PostgreSQL database with appropriate permissions
+---
 
-### PostgreSQL Setup
+## Environment Variables
 
-1. Install PostgreSQL on your system
-2. Create a database for the application
-3. Ensure you have the connection string (DSN) ready
+Create a `.env` file in the project root with the following content:
+
+```env
+POSTGRES_DB=hello
+POSTGRES_USER=hello
+POSTGRES_PASSWORD='s3creTp@$sW0rd'
+HELLO_DB_DSN=postgres://hello:s3creTp%40%24sW0rd@localhost:5432/hello?sslmode=disable
+```
+
+**Note:** The password is URL-encoded in HELLO_DB_DSN (@ → %40, $ → %24)
 
 ## Local Development
 
-### Environment Setup
+### Complete Setup (First Time)
 
-Set the required environment variable for database connection:
+1. **Create environment file:**
+   ```bash
+   # Copy the .env example above to a new .env file
+   ```
+
+2. **Start the full development environment:**
+   ```bash
+   # This will start PostgreSQL, run migrations, and start the API
+   make setup/dev
+   ```
+
+### Manual Setup Steps
+
+If you prefer to run commands individually:
 
 ```bash
-export HELLO_DB_DSN="postgres://username:password@localhost/dbname?sslmode=disable"
+# 1. Start PostgreSQL with Docker Compose
+make compose/up
+
+# 2. Run database migrations
+make db/migrations/up
+
+# 3. Run the API server
+make run/api
 ```
 
-### Running the Application
-
-Use the provided Makefile commands:
+### Other Useful Commands
 
 ```bash
-# Run the API server
-make run/api
-
 # Connect to the database using psql
 make db/psql
+
+# Stop PostgreSQL and remove volumes
+make compose/down
 
 # View all available commands
 make help
 ```
 
 The application will start on port 4000 by default.
+
+### Database Commands
+
+```bash
+# Connect to PostgreSQL container
+docker compose exec postgres psql -U hello -d hello
+
+# Essential psql commands once connected:
+\l           # List all databases
+\c hello     # Connect to hello database
+\dt          # List all tables
+\q           # Exit psql
+```
 
 ### Configuration Options
 
@@ -62,8 +102,35 @@ The application accepts the following command-line flags:
 
 ## API Endpoints
 
+### User Management
+
+**Create/Update User**
+```bash
+curl -X PUT http://localhost:4000/hello/username \
+  -H "Content-Type: application/json" \
+  -d '{"dateOfBirth": "YYYY-MM-DD"}'
+```
+
+**Requirements:**
+- Username must contain only letters (no numbers or special characters)
+- Date of birth must be in YYYY-MM-DD format and before today
+- Returns 204 No Content on success
+
+**Example:**
+```bash
+curl -X PUT http://localhost:4000/hello/john \
+  -H "Content-Type: application/json" \
+  -d '{"dateOfBirth": "1990-01-15"}'
+```
+
+**Get User Birthday Message**
+```bash
+curl http://localhost:4000/hello/username
+```
+
+### Other Endpoints
+
 - Health check and monitoring endpoints available
-- User management functionality
 - Application metrics at `/debug/vars`
 
 ## Dependencies
