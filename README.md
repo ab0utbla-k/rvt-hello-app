@@ -106,7 +106,7 @@ The application accepts the following command-line flags:
 
 **Create/Update User**
 ```bash
-curl -X PUT http://localhost:4000/hello/username \
+curl -i -X PUT http://localhost:4000/hello/username \
   -H "Content-Type: application/json" \
   -d '{"dateOfBirth": "YYYY-MM-DD"}'
 ```
