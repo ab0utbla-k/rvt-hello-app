@@ -1,7 +1,7 @@
 ---
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine3.22
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
