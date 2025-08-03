@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +20,7 @@ func Test_ErrorResponse_ReturnsCorrectFormat(t *testing.T) {
 	t.Parallel()
 
 	app := &application{
-		logger: slog.New(slog.NewTextHandler(os.Stdout, nil)),
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 
 	tests := []struct {
@@ -79,7 +79,7 @@ func Test_ServerErrorResponse_Returns500WithGenericMessage(t *testing.T) {
 	t.Parallel()
 
 	app := &application{
-		logger: slog.New(slog.NewTextHandler(os.Stdout, nil)),
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 
 	w := httptest.NewRecorder()
@@ -105,7 +105,7 @@ func Test_FailedValidationResponse_Returns422(t *testing.T) {
 	t.Parallel()
 
 	app := &application{
-		logger: slog.New(slog.NewTextHandler(os.Stdout, nil)),
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 
 	tests := []struct {
@@ -169,7 +169,7 @@ func Test_BadRequestResponse_ExposesErrorMessage(t *testing.T) {
 	t.Parallel()
 
 	app := &application{
-		logger: slog.New(slog.NewTextHandler(os.Stdout, nil)),
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 
 	w := httptest.NewRecorder()
