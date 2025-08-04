@@ -60,7 +60,7 @@ jobs:
           image: ${{ steps.get-params.outputs.repo }} /hello-app:v0.0.0-dbdedea
 
       - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: hello-app-service
