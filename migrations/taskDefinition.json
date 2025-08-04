@@ -16,7 +16,7 @@
       ]
     }
   ],
-  "family": "hello-app-task",
+  "family": "migrate",
   "executionRoleArn": "arn:aws:iam::794038210131:role/hello-app-task-execution-role",
   "networkMode": "awsvpc",
   "requiresCompatibilities": [
