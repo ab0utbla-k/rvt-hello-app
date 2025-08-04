@@ -1,6 +1,10 @@
 ---
 name: Run DB Migrations on ECS Fargate
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   workflow_dispatch:
 
