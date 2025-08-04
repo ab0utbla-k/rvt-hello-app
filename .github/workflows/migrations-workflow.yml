@@ -58,6 +58,6 @@ jobs:
             --network-configuration 'awsvpcConfiguration={subnets=["subnet-07268d71c69cd460a"],securityGroups=["sg-054c7018ee893a538"],assignPublicIp="DISABLED"}' \
             --task-definition $TASK_DEF_ARN
           
-          aws ecs wait tasks-stopped --cluster hello-app-cluster --tasks $TASK_ARN
+          aws ecs wait tasks-stopped --cluster hello-app-cluster --tasks $TASK_DEF_ARN
           
           aws ecs deregister-task-definition --task-definition $TASK_DEF_ARN
