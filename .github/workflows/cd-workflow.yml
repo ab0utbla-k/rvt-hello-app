@@ -45,6 +45,16 @@ jobs:
           REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
           echo "repo=$REPO" >> $GITHUB_OUTPUT
 
+      - name: Get DSN Secret ARN from Secrets Manager
+        id: get-dsn
+        run: |
+          SECRET_ARN=$(aws secretsmanager describe-secret \
+            --secret-id "rds/postgres/dsn" \
+            --query ARN \
+            --output text)
+
+          echo "secret_arn=$SECRET_ARN" >> $GITHUB_ENV
+
       - name: Download task definition
         run: |
           aws ecs describe-task-definition \
@@ -58,6 +68,10 @@ jobs:
           container-name: hello-app
           task-definition: task-definition.json
           image: ${{ steps.get-params.outputs.repo }}/hello-app:v0.0.0-dbdedea
+          environment-variables: |
+            ENVIRONMENT=dev
+          secrets:
+            DB_DSN=${{ steps.get-dsn.outputs.secret_arn }}
 
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2

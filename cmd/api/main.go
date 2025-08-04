@@ -43,8 +43,8 @@ type application struct {
 func main() {
 	var cfg config
 
-	cfg.port = getEnv("DB_PORT", 4000, parseInt)
-	cfg.env = getEnv("ENV", "development", parseString)
+	cfg.port = getEnv("APP_PORT", 4000, parseInt)
+	cfg.env = getEnv("ENVIRONMENT", "development", parseString)
 	cfg.db.dsn = getEnv("DB_DSN", "", parseString)
 	cfg.db.maxOpenConns = getEnv("DB_MAX_OPEN_CONNS", 25, parseInt)
 	cfg.db.maxIdleConns = getEnv("DB_MAX_IDLE_CONNS", 25, parseInt)
