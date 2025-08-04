@@ -1,11 +1,12 @@
 ---
-name: Terraform Workflow
+name: App CI
 
 permissions:
   id-token: write
   contents: read
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
     paths:
