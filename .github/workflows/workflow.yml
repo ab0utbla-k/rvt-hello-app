@@ -76,7 +76,9 @@ jobs:
           BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           
           docker build \
-            --build-arg BUILD_REF=$VERSION \
+            --build-arg BUILD_REF=$IMAGE_TAG \
             --build-arg BUILD_DATE=$BUILD_DATE \      
-            -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+            -t $REGISTRY/$REPOSITORY:$IMAGE_TAG \
+            .
+          
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
