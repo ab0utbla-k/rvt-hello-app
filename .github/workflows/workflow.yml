@@ -77,7 +77,7 @@ jobs:
           
           docker build \
             --build-arg BUILD_REF=$IMAGE_TAG \
-            --build-arg BUILD_DATE=$BUILD_DATE \      
+            --build-arg BUILD_DATE=$BUILD_DATE \
             -t $REGISTRY/$REPOSITORY:$IMAGE_TAG \
             .
           
