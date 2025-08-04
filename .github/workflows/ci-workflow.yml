@@ -7,8 +7,11 @@ permissions:
 
 on:
   workflow_dispatch:
+
   push:
-    branches: [ main ]
+    branches:
+      - main
+
     paths:
       - 'cmd/**'
       - 'internal/**'
@@ -21,10 +24,10 @@ defaults:
     shell: bash
 
 jobs:
-  plan:
-    name: Terraform Plan
+  ci:
+    name: Build & Push
     runs-on: ubuntu-latest
-    environment: dev-plan
+    environment: deploy
 
     steps:
       - name: Checkout Repository
@@ -36,15 +39,11 @@ jobs:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN_GH_RUNNER }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Get backend bucket from Parameter Store
+      - name: Get ECR repository name from Parameter Store
         id: get-ecr-repo
         run: |
           ECR_REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
           echo "repository=$ECR_REPO" >> $GITHUB_OUTPUT
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Generate version
         id: version
@@ -66,7 +65,12 @@ jobs:
             echo "✅ Building new image ${{ steps.version.outputs.version }}"
           fi
 
-      - name: Build, tag, and push docker image to Amazon ECR
+      - name: Login to Amazon ECR
+        if: steps.check-image.outputs.exists == 'false'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image to Amazon ECR
         if: steps.check-image.outputs.exists == 'false'
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -76,8 +80,9 @@ jobs:
           BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           
           docker build \
-            --build-arg BUILD_REF=$VERSION \
-            --build-arg BUILD_DATE=$BUILD_DATE \      
+            --build-arg BUILD_REF=$IMAGE_TAG \
+            --build-arg BUILD_DATE=$BUILD_DATE \
             -t $REGISTRY/$REPOSITORY:$IMAGE_TAG \
             .
+          
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG

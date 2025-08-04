@@ -1,0 +1,61 @@
+---
+name: App CD
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+
+#  push:
+#    branches:
+#      - main
+#
+#    paths:
+#      - 'cmd/**'
+#      - 'internal/**'
+#      - go.mod
+#      - go.sum
+#      - Dockerfile
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cd:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: deploy
+
+    steps:
+      - name: Get ECS task definition name from Parameter Store
+        id: get-params
+        run: |
+          TASK=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          
+          REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ steps.get-params.outputs.task }}  \
+            --query taskDefinition > task-definition.json
+
+      - name: Render Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          container-name: hello-app
+          task-definition: task-definition.json
+          image: ${{ steps.get-params.outputs.repo }} /hello-app:v0.0.0-dbdedea
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: hello-app-service
+          cluster: hello-app-cluster
