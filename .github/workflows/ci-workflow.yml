@@ -1,5 +1,5 @@
 ---
-name: App CI
+name: App CI/CD
 
 permissions:
   id-token: write
@@ -66,7 +66,7 @@ jobs:
           fi
 
       - name: Login to Amazon ECR
-        if: steps.check-image.outputs.exists == 'false'
+        #if: steps.check-image.outputs.exists == 'false'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
@@ -86,3 +86,48 @@ jobs:
             .
           
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          
+      - name: Get required params from Parameter Store
+        id: get-params
+        run: |
+          TASK=$(aws ssm get-parameter --name "/app/ecs/task-definition" --query "Parameter.Value" --output text)
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+          
+          REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+
+      - name: Get DSN Secret ARN from Secrets Manager
+        id: get-dsn
+        run: |
+          SECRET_ARN=$(aws secretsmanager describe-secret \
+            --secret-id "rds/postgres/dsn" \
+            --query ARN \
+            --output text)
+
+          echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ steps.get-params.outputs.task }}  \
+            --query taskDefinition > task-definition.json
+
+      - name: Render Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          container-name: hello-app
+          task-definition: task-definition.json
+          # Automate image later
+          image: ${{ steps.get-params.outputs.repo }}/hello-app:v0.0.0-b0dd246
+          environment-variables: |
+            ENVIRONMENT=dev
+          secrets:
+            DB_DSN=${{ steps.get-dsn.outputs.secret_arn }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: hello-app-service
+          cluster: hello-app-cluster
