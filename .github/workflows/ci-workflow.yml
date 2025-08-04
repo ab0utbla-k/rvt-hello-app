@@ -42,8 +42,8 @@ jobs:
       - name: Get ECR repository name from Parameter Store
         id: get-ecr-repo
         run: |
-          ECR_REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
-          echo "repository=$ECR_REPO" >> $GITHUB_OUTPUT
+          REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
 
       - name: Generate version
         id: version

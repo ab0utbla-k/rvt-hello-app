@@ -30,7 +30,13 @@ jobs:
     environment: deploy
 
     steps:
-      - name: Get ECS task definition name from Parameter Store
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN_GH_RUNNER }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Get required params from Parameter Store
         id: get-params
         run: |
           TASK=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
