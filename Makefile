@@ -67,8 +67,6 @@ compose/down:
 setup/dev: compose/up
 	@echo "Waiting for PostgreSQL to be ready...\n"
 	@sleep 3
-	@echo "💡 Applying database migrations...\n"
-	@$(MAKE) db/migrations/up
 	@echo "📋 Listing database tables...\n"
 	@$(MAKE) db/tables
 	@echo '✅ Development environment ready!'

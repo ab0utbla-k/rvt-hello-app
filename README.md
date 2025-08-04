@@ -113,7 +113,7 @@ curl -i -X PUT http://localhost:4000/hello/username \
 
 **Requirements:**
 - Username must contain only letters (no numbers or special characters)
-- Date of birth must be in YYYY-MM-DD format and before today
+- Date of birth must be in YYYY-MM-DD format and be in the past
 - Returns 204 No Content on success
 
 **Example:**

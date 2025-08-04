@@ -1,19 +1,19 @@
 # Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-alpine3.22 AS builder
 
 # Build args
 ARG BUILD_REF=""
 ENV CGO_ENABLED=0
 
-# Faced some issue with downloading httprouter. Maybe VPN issue
-RUN apk add --no-cache git
 WORKDIR /app
 COPY go.mod go.sum ./
-RUN GOPROXY=direct go mod download
+RUN go mod download
 
-# Copy source code
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
+
+# Copy migrations to cmd/api for embed
+COPY migrations/ ./cmd/api/migrations/
 
 # Build the binary with version injection
 RUN go build -ldflags "-X main.build=${BUILD_REF}" -o main ./cmd/api
