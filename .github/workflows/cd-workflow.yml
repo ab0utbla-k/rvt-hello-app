@@ -73,7 +73,7 @@ jobs:
           container-name: hello-app
           task-definition: task-definition.json
           # Automate image later
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ steps.get-ecr-repo.outputs.repo }}/hello-app:v0.0.0-508cd1f
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ steps.get-params.outputs.repo }}/hello-app:v0.0.0-508cd1f
           environment-variables: |
             ENVIRONMENT=dev
           secrets:
