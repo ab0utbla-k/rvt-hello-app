@@ -48,7 +48,7 @@ jobs:
       - name: Run ECS Fargate task
         run: |
           aws ecs run-task \
-            --cluster my-ecs-cluster \
+            --cluster hello-app-cluster \
             --launch-type FARGATE \
             --network-configuration 'awsvpcConfiguration={subnets=["subnet-07268d71c69cd460a"],securityGroups=["sg-054c7018ee893a538"],assignPublicIp="DISABLED"}' \
             --task-definition taskDefinition.json
