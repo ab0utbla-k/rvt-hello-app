@@ -6,7 +6,7 @@
       "command": [
         "sh",
         "-c",
-        "migrate -path /migrations -database \"$DB_DSN\" up"
+        "echo DB_DSN=$DB_DSN && migrate -path /migrations -database \"$DB_DSN\" up"
       ],
       "secrets": [
         {
