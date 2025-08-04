@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"os"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,18 +43,28 @@ type application struct {
 func main() {
 	var cfg config
 
-	flag.IntVar(&cfg.port, "port", 4000, "API server port")
-	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
+	cfg.port = getEnv("DB_PORT", 4000, parseInt)
+	cfg.env = getEnv("ENV", "development", parseString)
+	cfg.db.dsn = getEnv("DB_DSN", "", parseString)
+	cfg.db.maxOpenConns = getEnv("DB_MAX_OPEN_CONNS", 25, parseInt)
+	cfg.db.maxIdleConns = getEnv("DB_MAX_IDLE_CONNS", 25, parseInt)
+	cfg.db.maxIdleTime = getEnv("DB_MAX_IDLE_TIME", 15*time.Minute, parseDuration)
 
-	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "PostgreSQL DSN")
-
-	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
-	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
-	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "PostgreSQL max connection idle time")
+	flag.IntVar(&cfg.port, "port", cfg.port, "API server port")
+	flag.StringVar(&cfg.env, "env", cfg.env, "Environment (development|staging|production)")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", cfg.db.dsn, "PostgreSQL DSN")
+	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", cfg.db.maxOpenConns, "PostgreSQL max open connections")
+	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", cfg.db.maxIdleConns, "PostgreSQL max idle connections")
+	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", cfg.db.maxIdleTime, "PostgreSQL max connection idle time")
 
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	if strings.TrimSpace(cfg.db.dsn) == "" {
+		logger.Error("missing required DB_DSN (PostgreSQL DSN)")
+		os.Exit(1)
+	}
 
 	db, err := openDB(cfg)
 	if err != nil {
@@ -110,4 +122,32 @@ func openDB(cfg config) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func getEnv[T any](key string, defaultValue T, parser func(string) (T, error)) T {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return defaultValue
+	}
+
+	parsed, err := parser(value)
+	if err != nil {
+		return defaultValue
+	}
+	return parsed
+}
+
+// parseString returns the input string as-is without validation.
+// Empty strings are considered valid values.
+func parseString(s string) (string, error) {
+	return s, nil
+}
+
+func parseInt(s string) (int, error) {
+	val, err := strconv.ParseInt(s, 10, 64)
+	return int(val), err
+}
+
+func parseDuration(s string) (time.Duration, error) {
+	return time.ParseDuration(s)
 }
