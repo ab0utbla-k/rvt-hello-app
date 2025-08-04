@@ -117,11 +117,11 @@ func Test_FailedValidationResponse_Returns422(t *testing.T) {
 			name: "WithValidationErrors",
 			validationErrors: map[string]string{
 				"username":    "must contain only letters",
-				"dateOfBirth": "must be a date before today",
+				"dateOfBirth": "must be in the past",
 			},
 			expectedFields: map[string]string{
 				"username":    "must contain only letters",
-				"dateOfBirth": "must be a date before today",
+				"dateOfBirth": "must be in the past",
 			},
 		},
 		{

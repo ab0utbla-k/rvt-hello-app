@@ -18,7 +18,7 @@ type User struct {
 func ValidateUser(v *validator.Validator, user *User) {
 	v.Check(validator.Matches(user.Username, validator.UserRX), "username", "must contain only letters")
 	v.Check(!user.DateOfBirth.IsZero(), "dateOfBirth", "must be provided")
-	v.Check(user.DateOfBirth.Before(time.Now()), "dateOfBirth", "must be a date before today")
+	v.Check(user.DateOfBirth.Before(time.Now()), "dateOfBirth", "must be in the past")
 }
 
 type UserModel struct {
