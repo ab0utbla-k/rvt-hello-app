@@ -1,0 +1,87 @@
+---
+name: Terraform Workflow
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - go.mod
+      - go.sum
+      - Dockerfile
+
+env:
+  TF_PLAN_FILE: tfplan
+  TF_VERSION: 1.12.2
+
+defaults:
+  run:
+    shell: bash
+    # working-directory: ./implementation
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    environment: dev-plan
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN_GH_RUNNER }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Get backend bucket from Parameter Store
+        id: get-ecr-repo
+        run: |
+          ECR_REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
+          echo "repository=$ECR_REPO" >> $GITHUB_OUTPUT
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Generate version
+        id: version
+        run: |
+          VERSION="v0.0.0-$(git rev-parse --short HEAD)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+
+      - name: Check if image exists
+        id: check-image
+        run: |
+          if aws ecr describe-images \
+            --repository-name ${{ steps.get-ecr-repo.outputs.repository }} \
+            --image-ids imageTag=${{ steps.version.outputs.version }} 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Image ${{ steps.version.outputs.version }} already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✅ Building new image ${{ steps.version.outputs.version }}"
+          fi
+
+      - name: Build, tag, and push docker image to Amazon ECR
+        if: steps.check-image.outputs.exists == 'false'
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ steps.get-ecr-repo.outputs.repository }}
+          IMAGE_TAG: ${{ steps.version.outputs.version }}
+        run: |
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          
+          docker build \
+            --build-arg BUILD_REF=$VERSION \
+            --build-arg BUILD_DATE=$BUILD_DATE \      
+            -t $REGISTRY/$REPOSITORY:$IMAGE_TAG \
+            .
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
