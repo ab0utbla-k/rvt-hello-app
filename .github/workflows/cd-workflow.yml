@@ -53,7 +53,7 @@ jobs:
             --query ARN \
             --output text)
 
-          echo "secret_arn=$SECRET_ARN" >> $GITHUB_ENV
+          echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
 
       - name: Download task definition
         run: |
