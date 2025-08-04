@@ -1,5 +1,5 @@
 ---
-name: App CI/CD
+name: App CI
 
 permissions:
   id-token: write
