@@ -1,0 +1,51 @@
+---
+name: Run DB Migrations on ECS Fargate
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./migrations
+
+env:
+  VERSION: latest
+  REPOSITORY: migrate-ecr
+
+jobs:
+  migrate:
+    name: Create Table
+    runs-on: ubuntu-latest
+    environment: deploy
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN_GH_RUNNER }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image to Amazon ECR
+        if: steps.check-image.outputs.exists == 'false'
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker build -t $REGISTRY/${{ env.REPOSITORY }}:${{ env.VERSION }} .
+
+          docker push $REGISTRY/$REPOSITORY:${{ env.VERSION }}
+
+      - name: Run ECS Fargate task
+        run: |
+          aws ecs run-task \
+            --cluster my-ecs-cluster \
+            --launch-type FARGATE \
+            --network-configuration 'awsvpcConfiguration={subnets=["subnet-07268d71c69cd460a"],securityGroups=["sg-054c7018ee893a538"],assignPublicIp="DISABLED"}' \
+            --task-definition taskDefinition.json

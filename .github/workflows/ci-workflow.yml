@@ -42,8 +42,8 @@ jobs:
       - name: Get ECR repository name from Parameter Store
         id: get-ecr-repo
         run: |
-          ECR_REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
-          echo "repository=$ECR_REPO" >> $GITHUB_OUTPUT
+          REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
 
       - name: Generate version
         id: version
@@ -74,7 +74,7 @@ jobs:
         if: steps.check-image.outputs.exists == 'false'
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: ${{ steps.get-ecr-repo.outputs.repository }}
+          REPOSITORY: ${{ steps.get-ecr-repo.outputs.repo }}
           IMAGE_TAG: ${{ steps.version.outputs.version }}
         run: |
           BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
