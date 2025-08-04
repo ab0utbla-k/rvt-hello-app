@@ -15,14 +15,9 @@ on:
       - go.sum
       - Dockerfile
 
-env:
-  TF_PLAN_FILE: tfplan
-  TF_VERSION: 1.12.2
-
 defaults:
   run:
     shell: bash
-    # working-directory: ./implementation
 
 jobs:
   plan:
