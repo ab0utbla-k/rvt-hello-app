@@ -57,7 +57,7 @@ jobs:
         with:
           container-name: hello-app
           task-definition: task-definition.json
-          image: ${{ steps.get-params.outputs.repo }} /hello-app:v0.0.0-dbdedea
+          image: ${{ steps.get-params.outputs.repo }}/hello-app:v0.0.0-dbdedea
 
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
