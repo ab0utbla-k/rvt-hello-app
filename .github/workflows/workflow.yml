@@ -42,10 +42,6 @@ jobs:
           ECR_REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
           echo "repository=$ECR_REPO" >> $GITHUB_OUTPUT
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
       - name: Generate version
         id: version
         run: |
@@ -65,6 +61,11 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
             echo "✅ Building new image ${{ steps.version.outputs.version }}"
           fi
+
+      - name: Login to Amazon ECR
+        if: steps.check-image.outputs.exists == 'false'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push docker image to Amazon ECR
         if: steps.check-image.outputs.exists == 'false'
