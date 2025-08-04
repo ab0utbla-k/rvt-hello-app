@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"expvar"
 	"flag"
 	"log/slog"
@@ -82,10 +83,11 @@ func main() {
 	logger.Info("database connection pool established")
 
 	err = runMigrations(db)
-	if err != nil {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
+
 	logger.Info("migrations applied successfully.")
 
 	expvar.NewString("version").Set(version)
