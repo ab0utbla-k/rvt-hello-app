@@ -22,7 +22,7 @@ defaults:
 
 jobs:
   plan:
-    name: Terraform Plan
+    name: Build & Push
     runs-on: ubuntu-latest
     environment: dev-plan
 
@@ -36,7 +36,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN_GH_RUNNER }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Get backend bucket from Parameter Store
+      - name: Get ecr repository name from Parameter Store
         id: get-ecr-repo
         run: |
           ECR_REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
