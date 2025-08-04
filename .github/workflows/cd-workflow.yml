@@ -39,7 +39,7 @@ jobs:
       - name: Get required params from Parameter Store
         id: get-params
         run: |
-          TASK=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
+          TASK=$(aws ssm get-parameter --name "/app/ecs/task-definition" --query "Parameter.Value" --output text)
           echo "task=$TASK" >> $GITHUB_OUTPUT
           
           REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
