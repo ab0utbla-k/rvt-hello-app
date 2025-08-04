@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"expvar"
 	"flag"
 	"log/slog"
@@ -14,13 +15,18 @@ import (
 	"time"
 
 	"github.com/ab0utbla-k/rvt-hello-app/internal/data"
-
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/lib/pq"
 )
 
 const (
 	version = "1.0.0"
 )
+
+//go:embed migrations/*.sql
+var migrationFiles embed.FS
 
 type config struct {
 	port int
@@ -74,6 +80,13 @@ func main() {
 	defer db.Close()
 
 	logger.Info("database connection pool established")
+
+	err = runMigrations(db)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+	logger.Info("migrations applied successfully.")
 
 	expvar.NewString("version").Set(version)
 
@@ -150,4 +163,28 @@ func parseInt(s string) (int, error) {
 
 func parseDuration(s string) (time.Duration, error) {
 	return time.ParseDuration(s)
+}
+
+func runMigrations(db *sql.DB) error {
+	sourceDriver, err := iofs.New(migrationFiles, "migrations")
+	if err != nil {
+		return err
+	}
+
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		return err
+	}
+
+	m, err := migrate.NewWithInstance("iofs", sourceDriver, "postgres", driver)
+	if err != nil {
+		return err
+	}
+
+	err = m.Up()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
