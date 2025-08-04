@@ -13,7 +13,15 @@
           "name": "DB_DSN",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:794038210131:secret:rds/postgres/dsn-I2NWsU"
         }
-      ]
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/hello-app",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
     }
   ],
   "family": "migrate",

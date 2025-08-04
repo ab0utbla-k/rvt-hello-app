@@ -52,12 +52,14 @@ jobs:
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           
-          aws ecs run-task \
+          TASK_ARN=$(aws ecs run-task \
             --cluster hello-app-cluster \
             --launch-type FARGATE \
             --network-configuration 'awsvpcConfiguration={subnets=["subnet-07268d71c69cd460a"],securityGroups=["sg-054c7018ee893a538"],assignPublicIp="DISABLED"}' \
-            --task-definition $TASK_DEF_ARN
+            --task-definition "$TASK_DEF_ARN" \
+            --query 'tasks[0].taskArn' \
+            --output text)
           
-          aws ecs wait tasks-stopped --cluster hello-app-cluster --tasks $TASK_DEF_ARN
+          aws ecs wait tasks-stopped --cluster hello-app-cluster --tasks $TASK_ARN
           
           aws ecs deregister-task-definition --task-definition $TASK_DEF_ARN
