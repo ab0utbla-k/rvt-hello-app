@@ -38,7 +38,6 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push Docker image to Amazon ECR
-        if: steps.check-image.outputs.exists == 'false'
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
