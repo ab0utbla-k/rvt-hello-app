@@ -18,10 +18,6 @@ confirm:
 # DEVELOPMENT
 # ==================================================================================== #
 
-## run/api: run the cmd/api application
-.PHONY: run/api
-run/api:
-	go run ./cmd/api -db-dsn=${HELLO_DB_DSN}
 
 ## db/psql: connect to the database using psql
 .PHONY: db/psql
@@ -39,17 +35,15 @@ db/migrations/new:
 	@echo 'Creating migration files for ${name}...'
 	migrate create -seq -ext=.sql -dir=./migrations ${name}
 
-## db/migrations/up: apply all up database migrations
-.PHONY: db/migrations/up
-db/migrations/up: confirm
-	@echo 'Running up migrations...'
-	migrate -path ./migrations -database ${HELLO_DB_DSN} up
+## test: run all tests with verbose output
+.PHONY: test
+test:
+	go test -v ./...
 
-## db/migrations/down: apply all down database migrations
-.PHONY: db/migrations/down
-db/migrations/down: confirm
-	@echo 'Running down migrations...'
-	migrate -path ./migrations -database ${HELLO_DB_DSN} down
+## test/short: run tests excluding slow ones with verbose output
+.PHONY: test/short
+test/short:
+	go test -v -short ./...
 
 ## compose/up: start docker compose services
 .PHONY: compose/up
@@ -61,6 +55,10 @@ compose/up:
 compose/down:
 	docker compose down -v
 
+## logs: show application logs from docker container
+.PHONY: logs
+logs:
+	docker compose logs -f app
 
 ## setup/dev: complete development environment setup
 .PHONY: setup/dev
