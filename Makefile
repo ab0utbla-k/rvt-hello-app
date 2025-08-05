@@ -35,15 +35,27 @@ db/migrations/new:
 	@echo 'Creating migration files for ${name}...'
 	migrate create -seq -ext=.sql -dir=./migrations ${name}
 
+## test/setup: copy migrations
+.PHONY: test/setup
+test/setup:
+	@cp -r migrations/ cmd/api/migrations/
+
+## test/cleanup: remove migrations
+.PHONY: test/cleanup
+test/cleanup:
+	@rm -rf cmd/api/migrations
+
 ## test: run all tests with verbose output
 .PHONY: test
-test:
-	go test -v ./...
+test: test/setup
+	@go test -v ./...
+	@$(MAKE) test/cleanup
 
 ## test/short: run tests excluding slow ones with verbose output
 .PHONY: test/short
-test/short:
-	go test -v -short ./...
+test/short: test/setup
+	@go test -v -short ./...
+	@$(MAKE) test/cleanup
 
 ## compose/up: start docker compose services
 .PHONY: compose/up
