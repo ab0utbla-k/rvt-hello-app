@@ -1,5 +1,5 @@
 ---
-name: App CI
+name: App CI/CD
 
 permissions:
   id-token: write
@@ -166,13 +166,14 @@ jobs:
           container-name: hello-app
           task-definition: task-definition.json
           # Automate image later
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ steps.get-params.outputs.repo }}:v0.0.0-1aafa75
+          image: ${{ env.TARGET_IMAGE }}
           environment-variables: |
             ENVIRONMENT=dev
           secrets:
             DB_DSN=${{ steps.get-dsn.outputs.secret_arn }}
 
       - name: Deploy to ECS
+        if: steps.check-image.outputs.same-image == 'false'
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
