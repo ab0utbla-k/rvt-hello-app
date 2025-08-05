@@ -1,0 +1,178 @@
+---
+name: App CI/CD
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - go.mod
+      - go.sum
+      - Dockerfile
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ci:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    environment: deploy
+    outputs:
+      image-tag: ${{ steps.set-image-tag.outputs.image-tag }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN_GH_RUNNER }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Get ECR repository name from Parameter Store
+        id: get-ecr-repo
+        run: |
+          REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+
+      - name: Generate version
+        id: version
+        run: |
+          VERSION="v0.0.0-$(git rev-parse --short HEAD)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+
+      - name: Check if image exists
+        id: check-image
+        run: |
+          if aws ecr describe-images \
+            --repository-name ${{ steps.get-ecr-repo.outputs.repo }} \
+            --image-ids imageTag=${{ steps.version.outputs.version }} 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Image ${{ steps.version.outputs.version }} already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✅ Building new image ${{ steps.version.outputs.version }}"
+          fi
+
+      - name: Set image tag
+        id: set-image-tag
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ steps.get-ecr-repo.outputs.repo }}
+          TAG: ${{ steps.version.outputs.version }}
+        run: |
+          IMAGE_TAG="$REGISTRY/$REPOSITORY:$TAG"
+          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Login to Amazon ECR
+        if: steps.check-image.outputs.exists == 'false'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Docker image to Amazon ECR
+        id: build
+        if: steps.check-image.outputs.exists == 'false'
+        env:
+          IMAGE_TAG: ${{ steps.set-image-tag.outputs.image-tag }}
+        run: |
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          
+          docker build \
+            --build-arg BUILD_REF=$IMAGE_TAG \
+            --build-arg BUILD_DATE=$BUILD_DATE \
+            -t $IMAGE_TAG \
+            .
+          
+          docker push $IMAGE_TAG
+
+  cd:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: deploy
+    needs: ci
+    env:
+      TARGET_IMAGE: ${{ needs.ci.outputs.image-uri }}
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN_GH_RUNNER }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Get AWS resources info
+        id: get-params
+        run: |
+          SECRET_ARN=$(aws secretsmanager describe-secret \
+            --secret-id "rds/postgres/dsn" \
+            --query ARN \
+            --output text)
+          echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
+
+      - name: Check current running image
+        id: check-image
+        run: |
+          CURRENT_TASK=$(aws ecs describe-services \
+            --cluster hello-app-cluster \
+            --services hello-app-service \
+            --query 'services[0].taskDefinition' \
+            --output text)
+
+           CURRENT_IMAGE=$(aws ecs describe-task-definition \
+            --task-definition $CURRENT_TASK \
+            --query 'taskDefinition.containerDefinitions[?name==`hello-app`].image' \
+            --output text)
+
+          echo "Current image: $CURRENT_IMAGE"
+          echo "Target image: $TARGET_IMAGE"
+          
+          echo "current-task=$CURRENT_TASK" >> "$GITHUB_OUTPUT"
+
+          if [[ "$CURRENT_IMAGE" == "$TARGET_IMAGE" ]]; then
+            echo "same-image=true" >> "$GITHUB_OUTPUT"
+            echo "Image is already running - skipping deployment"
+          else
+            echo "same-image=false" >> "$GITHUB_OUTPUT"
+            echo "Image differs - proceeding with deployment"
+          fi
+
+      - name: Download task definition
+        if: steps.check-image.outputs.same-image == 'false'
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ steps.check-image.outputs.current-task }}  \
+            --query taskDefinition > task-definition.json
+
+      - name: Render Amazon ECS task definition
+        if: steps.check-image.outputs.same-image == 'false'
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          container-name: hello-app
+          task-definition: task-definition.json
+          image: ${{ env.TARGET_IMAGE }}
+          environment-variables: |
+            ENVIRONMENT=dev
+          secrets:
+            DB_DSN=${{ steps.get-params.outputs.secret_arn }}
+
+      - name: Deploy to ECS
+        if: steps.check-image.outputs.same-image == 'false'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: hello-app-service
+          cluster: hello-app-cluster
