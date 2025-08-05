@@ -120,6 +120,9 @@ jobs:
             --query ARN \
             --output text)
           echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
+          
+          URL=$(aws ssm get-parameter --name "/app/cloudfront_https_url" --query "Parameter.Value" --output text)
+          echo "cloudfront-url=$URL" >> $GITHUB_OUTPUT
 
       - name: Check current running image
         id: check-image
@@ -175,3 +178,7 @@ jobs:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: hello-app-service
           cluster: hello-app-cluster
+
+      - name: "🚀Click Here"
+        run: |
+          echo "[Click here to access your app](${{ steps.get-params.outputs.cloudfront-url }})" >> $GITHUB_STEP_SUMMARY
