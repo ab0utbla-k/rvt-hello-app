@@ -179,6 +179,6 @@ jobs:
           service: hello-app-service
           cluster: hello-app-cluster
 
-      - name: "🚀Click Here"
+      - name: Add step summary
         run: |
-          echo "[Click here to access your app](${{ steps.get-params.outputs.cloudfront-url }})" >> $GITHUB_STEP_SUMMARY
+          echo "[Click here to access your app](${{ steps.get-params.outputs.cloudfront-url }}/healthcheck)" >> $GITHUB_STEP_SUMMARY
