@@ -98,64 +98,83 @@ jobs:
     environment: deploy
     needs: ci
     env:
-      IMAGE_URI: ${{ needs.ci.outputs.image-uri }}
+      TARGET_IMAGE: ${{ needs.ci.outputs.image-uri }}
 
     steps:
-      - name: Test
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN_GH_RUNNER }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Get required params from Parameter Store
+        id: get-params
         run: |
-          echo $IMAGE_URI
-#      - name: Configure AWS Credentials
-#        uses: aws-actions/configure-aws-credentials@v4
-#        with:
-#          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN_GH_RUNNER }}
-#          aws-region: ${{ vars.AWS_REGION }}
-#
-#      - name: Get required params from Parameter Store
-#        id: get-params
-#        run: |
-#          TASK=$(aws ssm get-parameter --name "/app/ecs/task-definition" --query "Parameter.Value" --output text)
-#          echo "task=$TASK" >> $GITHUB_OUTPUT
-#
-#          REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
-#          echo "repo=$REPO" >> $GITHUB_OUTPUT
-#
-#      - name: Get DSN Secret ARN from Secrets Manager
-#        id: get-dsn
-#        run: |
-#          SECRET_ARN=$(aws secretsmanager describe-secret \
-#            --secret-id "rds/postgres/dsn" \
-#            --query ARN \
-#            --output text)
-#
-#          echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
-#
-#      - name: Login to Amazon ECR
-#        #if: steps.check-image.outputs.exists == 'false'
-#        id: login-ecr
-#        uses: aws-actions/amazon-ecr-login@v2
-#
-#      - name: Download task definition
-#        run: |
-#          aws ecs describe-task-definition \
-#            --task-definition ${{ steps.get-params.outputs.task }}  \
-#            --query taskDefinition > task-definition.json
-#
-#      - name: Render Amazon ECS task definition
-#        id: task-def
-#        uses: aws-actions/amazon-ecs-render-task-definition@v1
-#        with:
-#          container-name: hello-app
-#          task-definition: task-definition.json
-#          # Automate image later
-#          image: ${{ steps.login-ecr.outputs.registry }}/${{ steps.get-params.outputs.repo }}:v0.0.0-1aafa75
-#          environment-variables: |
-#            ENVIRONMENT=dev
-#          secrets:
-#            DB_DSN=${{ steps.get-dsn.outputs.secret_arn }}
-#
-#      - name: Deploy to ECS
-#        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-#        with:
-#          task-definition: ${{ steps.task-def.outputs.task-definition }}
-#          service: hello-app-service
-#          cluster: hello-app-cluster
+          TASK=$(aws ssm get-parameter --name "/app/ecs/task-definition" --query "Parameter.Value" --output text)
+          echo "task=$TASK" >> $GITHUB_OUTPUT
+
+          REPO=$(aws ssm get-parameter --name "/app/ecr/repository-name" --query "Parameter.Value" --output text)
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+
+      - name: Get DSN Secret ARN from Secrets Manager
+        id: get-dsn
+        run: |
+          SECRET_ARN=$(aws secretsmanager describe-secret \
+            --secret-id "rds/postgres/dsn" \
+            --query ARN \
+            --output text)
+
+          echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
+
+      - name: Check current running image
+        id: check-image
+        run: |
+          CURRENT_TASK=$(aws ecs describe-services \
+            --cluster hello-app-cluster \
+            --services hello-app-service \
+            --query 'services[0].taskDefinition' \
+            --output text)
+
+           CURRENT_IMAGE=$(aws ecs describe-task-definition \
+            --task-definition $CURRENT_TASK \
+            --query 'taskDefinition.containerDefinitions[?name==`hello-app`].image' \
+            --output text)
+
+          echo "Current image: $CURRENT_IMAGE"
+          echo "Target image: $TARGET_IMAGE"
+
+          if [[ "$CURRENT_IMAGE" == "$TARGET_IMAGE" ]]; then
+            echo "same-image=true" >> "$GITHUB_OUTPUT"
+            echo "Image is already running - skipping deployment"
+          else
+            echo "same-image=false" >> "$GITHUB_OUTPUT"
+            echo "Image differs - proceeding with deployment"
+          fi
+
+      - name: Download task definition
+        if: steps.check-image.outputs.same-image == 'false'
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ steps.get-params.outputs.task }}  \
+            --query taskDefinition > task-definition.json
+
+      - name: Render Amazon ECS task definition
+        if: steps.check-image.outputs.same-image == 'false'
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          container-name: hello-app
+          task-definition: task-definition.json
+          # Automate image later
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ steps.get-params.outputs.repo }}:v0.0.0-1aafa75
+          environment-variables: |
+            ENVIRONMENT=dev
+          secrets:
+            DB_DSN=${{ steps.get-dsn.outputs.secret_arn }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: hello-app-service
+          cluster: hello-app-cluster
