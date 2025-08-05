@@ -50,6 +50,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.5'
+      
+      - name: Copy migrations for embed
+        run: cp -r migrations/ cmd/api/migrations/
 
       - name: Run tests
         run: go test -v ./...
