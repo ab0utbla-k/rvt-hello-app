@@ -103,7 +103,7 @@ jobs:
     environment: deploy
     needs: ci
     env:
-      TARGET_IMAGE: ${{ needs.ci.outputs.image-uri }}
+      TARGET_IMAGE: ${{ needs.ci.outputs.image-tag }}
 
     steps:
       - name: Configure AWS Credentials
