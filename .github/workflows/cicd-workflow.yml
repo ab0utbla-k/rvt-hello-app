@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: deploy
     outputs:
-      image-uri: ${{ steps.build.outputs.image-uri }}
+      image-tag: ${{ steps.set-image-tag.outputs.image-tag }}
 
     steps:
       - name: Checkout Repository
@@ -67,6 +67,16 @@ jobs:
             echo "✅ Building new image ${{ steps.version.outputs.version }}"
           fi
 
+      - name: Set image tag
+        id: set-image-tag
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ steps.get-ecr-repo.outputs.repo }}
+          TAG: ${{ steps.version.outputs.version }}
+        run: |
+          IMAGE_TAG="$REGISTRY/$REPOSITORY:$TAG"
+          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
       - name: Login to Amazon ECR
         if: steps.check-image.outputs.exists == 'false'
         id: login-ecr
@@ -76,21 +86,17 @@ jobs:
         id: build
         if: steps.check-image.outputs.exists == 'false'
         env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: ${{ steps.get-ecr-repo.outputs.repo }}
-          IMAGE_TAG: ${{ steps.version.outputs.version }}
+          IMAGE_TAG: ${{ steps.set-image-tag.outputs.image-tag }}
         run: |
           BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          IMAGE_URI="$REGISTRY/$REPOSITORY:$IMAGE_TAG"
           
           docker build \
             --build-arg BUILD_REF=$IMAGE_TAG \
             --build-arg BUILD_DATE=$BUILD_DATE \
-            -t $IMAGE_URI \
+            -t $IMAGE_TAG \
             .
           
-          docker push $IMAGE_URI  
-          echo "image-uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+          docker push $IMAGE_TAG
 
   cd:
     name: Deploy
