@@ -62,3 +62,11 @@ Returns: `{"message": "Hello, john! Your birthday is in N day(s)"}`
 **Requirements:**
 - Username: letters only
 - Date: YYYY-MM-DD format, must be in the past
+
+## CI/CD Workflows
+
+**Tests:** Runs on PRs and non-main pushes. Uses PostgreSQL 16 and Go 1.24.5.
+
+**CI/CD:** Deploys to AWS ECS on main branch pushes. Builds Docker images to ECR and updates ECS service.
+
+Both workflows can be triggered manually from the GitHub Actions tab.
