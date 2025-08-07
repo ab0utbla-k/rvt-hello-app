@@ -157,6 +157,21 @@ jobs:
           aws ecs describe-task-definition \
             --task-definition ${{ steps.check-image.outputs.current-task }}  \
             --query taskDefinition > task-definition.json
+      
+
+      - name: Remove command and update health check
+        if: steps.check-image.outputs.same-image == 'false'
+        run: |
+          CONTAINER_PORT=$(jq -r '.containerDefinitions[0].portMappings[0].containerPort' task-definition.json)
+          
+          jq --argjson port "$CONTAINER_PORT" '
+            del(.containerDefinitions[0].command) |
+            .containerDefinitions[0].healthCheck.command = [
+            "CMD-SHELL",
+            ("wget --no-verbose --tries=1 --spider http://localhost:" + ($port | tostring) + "/healthcheck || exit 1")
+          ]
+          ' task-definition.json > temp.json
+          mv temp.json task-definition.json
 
       - name: Render Amazon ECS task definition
         if: steps.check-image.outputs.same-image == 'false'
