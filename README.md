@@ -63,7 +63,7 @@ Returns: `{"message": "Hello, john! Your birthday is in N day(s)"}`
 - Username: letters only
 - Date: YYYY-MM-DD format, must be in the past
 
-## CI/CD Workflows
+## Workflows
 
 **Tests:** Runs on PRs and non-main pushes. Uses PostgreSQL 16 and Go 1.24.5.
 
