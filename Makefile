@@ -70,7 +70,7 @@ compose/down:
 ## logs: show application logs from docker container
 .PHONY: logs
 logs:
-	docker compose logs -f app
+	docker compose logs api
 
 ## setup/dev: complete development environment setup
 .PHONY: setup/dev
