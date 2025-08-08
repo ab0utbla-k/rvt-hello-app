@@ -1,14 +1,11 @@
 ---
 version: 2
 updates:
-  - package-ecosystem: "gomod"
-    directory: "/"
+  - package-ecosystem: gomod
+    directory: /
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Europe/Warsaw"
-    open-pull-requests-limit: 10
+      interval: weekly
+    open-pull-requests-limit: 5
     
     # Group related updates to reduce PR noise
     groups:
@@ -25,3 +22,7 @@ updates:
           - "github.com/docker/*"
           - "github.com/moby/*"
           - "github.com/containerd/*"
+    
+    commit-message:
+      prefix: chore
+      include: scope
