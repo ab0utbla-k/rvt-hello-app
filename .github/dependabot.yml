@@ -1,0 +1,27 @@
+---
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 10
+    
+    # Group related updates to reduce PR noise
+    groups:
+      testcontainers:
+        patterns:
+          - "github.com/testcontainers/testcontainers-go*"
+        
+      opentelemetry:
+        patterns:
+          - "go.opentelemetry.io/*"
+          
+      docker-deps:
+        patterns:
+          - "github.com/docker/*"
+          - "github.com/moby/*"
+          - "github.com/containerd/*"
