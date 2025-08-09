@@ -4,9 +4,7 @@ import (
 	"regexp"
 )
 
-var (
-	UserRX = regexp.MustCompile("^[a-zA-Z]+$")
-)
+var UserRX = regexp.MustCompile("^[a-zA-Z]+$")
 
 type Validator struct {
 	Errors map[string]string

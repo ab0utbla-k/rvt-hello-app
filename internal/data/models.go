@@ -5,16 +5,14 @@ import (
 	"errors"
 )
 
-var (
-	ErrRecordNotFound = errors.New("record not found")
-)
+var ErrRecordNotFound = errors.New("record not found")
 
 type Models struct {
-	Users      UserModel
+	Users UserModel
 }
 
 func NewModels(db *sql.DB) Models {
 	return Models{
-		Users:       UserModel{DB: db},
+		Users: UserModel{DB: db},
 	}
 }

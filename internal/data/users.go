@@ -49,7 +49,6 @@ func (u UserModel) Get(username string) (*User, error) {
 		&user.Username,
 		&user.DateOfBirth,
 	)
-
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
