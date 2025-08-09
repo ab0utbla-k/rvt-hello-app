@@ -58,6 +58,7 @@ func TestWriteJSON(t *testing.T) {
 			app := &application{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 			}
+
 			w := httptest.NewRecorder()
 
 			err := app.writeJSON(w, tt.status, tt.data, tt.headers)
@@ -82,4 +83,101 @@ func TestWriteJSON(t *testing.T) {
 			assert.True(t, strings.HasSuffix(w.Body.String(), "\n"))
 		})
 	}
+}
+
+func TestReadJSON(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		payload     string
+		expectError string
+	}{
+		{
+			name:        "SyntaxError",
+			payload:     `{"dateOfBirth": "1990-01-01"`,
+			expectError: "badly-formed JSON",
+		},
+		{
+			name:        "EmptyBody",
+			payload:     "",
+			expectError: "body must not be empty",
+		},
+		{
+			name:        "UnknownField",
+			payload:     `{"unknown": "value"}`,
+			expectError: "unknown key",
+		},
+		{
+			name:        "MultipleValues",
+			payload:     `{"dateOfBirth": "1990-01-01"}{"extra": "value"}`,
+			expectError: "single JSON value",
+		},
+		{
+			name:        "UnexpectedEOF",
+			payload:     `{"dateOfBirth": "199`,
+			expectError: "badly-formed JSON",
+		},
+		{
+			name:        "TypeMismatch",
+			payload:     `{"dateOfBirth": 123}`,
+			expectError: "incorrect JSON type",
+		},
+		{
+			name:        "ValidJSON",
+			payload:     `{"dateOfBirth": "1990-01-01"}`,
+			expectError: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+			}
+
+			r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.payload))
+			r.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			var input struct {
+				DateOfBirth string `json:"dateOfBirth"`
+			}
+
+			err := app.readJSON(w, r, &input)
+
+			if tt.expectError == "" {
+				require.NoError(t, err)
+				assert.Equal(t, "1990-01-01", input.DateOfBirth)
+			} else {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectError)
+			}
+		})
+	}
+}
+
+func TestReadJSON_MaxBytesLimit(t *testing.T) {
+	t.Parallel()
+
+	app := &application{
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+
+	// Create payload larger than 1MB limit
+	largePayload := `{"dateOfBirth": "` + strings.Repeat("x", 1_048_577) + `"}`
+
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(largePayload))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	var input struct {
+		DateOfBirth string `json:"dateOfBirth"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must not be larger than")
 }
