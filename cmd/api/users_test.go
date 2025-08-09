@@ -10,12 +10,8 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
-	"time"
-
-	//"os"
-	//"strings"
 	"testing"
-	//"time"
+	"time"
 
 	"github.com/ab0utbla-k/rvt-hello-app/internal/data"
 	"github.com/ab0utbla-k/rvt-hello-app/internal/testutils"
@@ -371,53 +367,3 @@ func (suite *APITestSuite) TestNotFoundRoute() {
 	require.NoError(suite.T(), err)
 	assert.Contains(suite.T(), response["error"], "could not be found")
 }
-
-//func Test_ReadJSON_InvalidJSON_ReturnsError(t *testing.T) {
-//	t.Parallel()
-//
-//	tests := []struct {
-//		name        string
-//		payload     string
-//		expectError string
-//	}{
-//		{
-//			name:        "SyntaxError",
-//			payload:     `{"dateOfBirth": "1990-01-01"`,
-//			expectError: "badly-formed JSON",
-//		},
-//		{
-//			name:        "EmptyBody",
-//			payload:     "",
-//			expectError: "body must not be empty",
-//		},
-//		{
-//			name:        "UnknownField",
-//			payload:     `{"unknown": "value"}`,
-//			expectError: "unknown key",
-//		},
-//		{
-//			name:        "MultipleValues",
-//			payload:     `{"dateOfBirth": "1990-01-01"}{"extra": "value"}`,
-//			expectError: "single JSON value",
-//		},
-//	}
-//
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			t.Parallel()
-//
-//			app := &application{}
-//			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.payload))
-//			w := httptest.NewRecorder()
-//
-//			var input struct {
-//				DateOfBirth string `json:"dateOfBirth"`
-//			}
-//
-//			err := app.readJSON(w, req, &input)
-//
-//			require.Error(t, err)
-//			assert.Contains(t, err.Error(), tt.expectError)
-//		})
-//	}
-//}
