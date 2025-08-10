@@ -57,7 +57,7 @@ Returns: `204 No Content`
 ```bash
 curl http://localhost:4000/hello/john
 ```
-Returns: `{"message": "Hello, john! Your birthday is in N day(s)"}`
+Returns: One of the birthday messages from the requirements
 
 **Requirements:**
 - Username: letters only
@@ -68,5 +68,7 @@ Returns: `{"message": "Hello, john! Your birthday is in N day(s)"}`
 **Tests:** Runs on PRs and non-main pushes. Uses PostgreSQL 16 and Go 1.24.5.
 
 **CI/CD:** Deploys to AWS ECS on main branch pushes. Builds Docker images to ECR and updates ECS service.
+
+**Dependabot:** Automatically creates weekly PRs for Go module updates. Groups related dependencies (testcontainers, OpenTelemetry, Docker) to reduce PR noise.
 
 Both workflows can be triggered manually from the GitHub Actions tab.
